@@ -141,12 +141,12 @@ tap.test('get existing doc with my user', (t) => {
     a: 1,
     $access: ['aa']
   }
-  createDoc(t, doc, (body) => {
+  createDocAs(proxyAuth, t, doc, (body) => {
     wreck.get(proxyAuth + testDb + 'a', {json: 'force'}, (error, response, payload) => {
       t.error(error)
       t.equal(response.statusCode, 200)
       t.equal(payload.a, 1)
-      deleteDoc(t, body.rev, t.end)
+      deleteDocAs(proxyAuth, t, body, t.end)
     })
   })
 })
@@ -156,12 +156,12 @@ tap.test('get existing doc with my role', (t) => {
     a: 1,
     $access: ['x']
   }
-  createDoc(t, doc, (body) => {
+  createDocAs(proxyAuth, t, doc, (body) => {
     wreck.get(proxyAuth + testDb + 'a', {json: 'force'}, (error, response, payload) => {
       t.error(error)
       t.equal(response.statusCode, 200)
       t.equal(payload.a, 1)
-      deleteDoc(t, body.rev, t.end)
+      deleteDocAs(proxyAuth, t, body, t.end)
     })
   })
 })
@@ -171,10 +171,10 @@ tap.test('get existing doc with other user', (t) => {
     a: 1,
     $access: ['bb']
   }
-  createDocAsBB(t, doc, (body) => {
+  createDocAs(proxyButh, t, doc, (body) => {
     wreck.get(proxyAuth + testDb + 'a', {json: 'force'}, (error, response, payload) => {
       t.equal(error.output.payload.statusCode, 401)
-      deleteDocAsBB(t, body.rev, t.end)
+      deleteDocAs(proxyButh, t, body, t.end)
     })
   })
 })
@@ -184,16 +184,54 @@ tap.test('get existing doc with other role', (t) => {
     a: 1,
     $access: ['a']
   }
-  createDocAsBB(t, doc, (body) => {
+  createDocAs(proxyButh, t, doc, (body) => {
     wreck.get(proxyAuth + testDb + 'a', {json: 'force'}, (error, response, payload) => {
       t.equal(error.output.payload.statusCode, 401)
-      deleteDocAsBB(t, body.rev, t.end)
+      deleteDocAs(proxyButh, t, body, t.end)
     })
   })
 })
 
-function createDocAsBB (t, doc, callback) {
-  wreck.request('put', proxyButh + testDb + 'a', { payload: doc }, (error, response) => {
+tap.only('create docs with two users and query each _changes', (t) => {
+  const docA = {
+    _id: 'xa',
+    a: 1,
+    $access: ['aa']
+  }
+  const docB = {
+    _id: 'xb',
+    b: 1,
+    $access: ['bb']
+  }
+  createDocAs(proxyAuth, t, docA, (bodyA) => {
+    createDocAs(proxyButh, t, docB, (bodyB) => {
+      getChangesAs(proxyAuth, t, (changesA) => {
+        getChangesAs(proxyButh, t, (changesB) => {
+          // tests go here
+          t.equals(changesA.results.length, 1)
+          t.equals(changesA.results[0].id, 'xa')
+          t.equals(changesB.results.length, 1)
+          t.equals(changesB.results[0].id, 'xb')
+          deleteDocAs(proxyAuth, t, bodyA, () => {
+            deleteDocAs(proxyButh, t, bodyB, t.end)
+          })
+        })
+      })
+    })
+  })
+})
+
+// utilities
+
+function getChangesAs (auth, t, callback) {
+  wreck.get(auth + testDb + '_changes', { json: 'force' }, (error, payload, body) => {
+    t.error(error)
+    callback(body)
+  })
+}
+
+function createDocAs (auth, t, doc, callback) {
+  wreck.request('put', auth + testDb + (doc._id || 'a'), { payload: doc }, (error, response) => {
     t.error(error)
     t.equal(response.statusCode, 201)
     readBody(t, response, (body) => {
@@ -202,23 +240,8 @@ function createDocAsBB (t, doc, callback) {
   })
 }
 
-function createDoc (t, doc, callback) {
-  wreck.request('put', proxyAuth + testDb + 'a', { payload: doc }, (error, response) => {
-    t.error(error)
-    t.equal(response.statusCode, 201)
-    readBody(t, response, (body) => {
-      callback(body)
-    })
-  })
-}
-
-function deleteDocAsBB (t, rev, callback) {
-  const delUrl = proxyButh + testDb + 'a?rev=' + rev
-  wreck.delete(delUrl, callback)
-}
-
-function deleteDoc (t, rev, callback) {
-  const delUrl = proxyAuth + testDb + 'a?rev=' + rev
+function deleteDocAs (auth, t, doc, callback) {
+  const delUrl = auth + testDb + (doc.id || 'a') + '?rev=' + doc.rev
   wreck.delete(delUrl, callback)
 }
 

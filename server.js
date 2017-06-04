@@ -1,3 +1,5 @@
+const URL = require('url').URL
+
 const Hapi = require('hapi')
 const h2o2 = require('h2o2')
 const Hoek = require('hoek')
@@ -21,6 +23,25 @@ module.exports.start = function (options, callback) {
     response(null, options.couchdb + request.url.path)
   }
 
+  const mapUriChanges = (request, response) => {
+    if (!request.headers.authorization) {
+      return response(Boom.unauthorized('Missing authorization header'))
+    }
+
+    // if user X, get username & roles and query _design/$auth/_view/users-and-roles
+    // with all startkey/endkey ranges
+    // first stab with just username
+    getUserSessionByRequest(request, (session) => {
+      // if admin, go to regular changes
+      if (session.userCtx.roles.indexOf('_admin') !== -1) {
+        return response(null, options.couchdb + request.url.path)
+      }
+      const name = session.userCtx.name
+      const uri = options.couchdb + '/authtest/_design/$auth/_view/users-and-roles?startkey=["' + name + '"]&endkey=["' + name + '",{}]'
+      response(null, uri)
+    })
+  }
+
   server.register([
     h2o2
   ], (registerError) => {
@@ -33,6 +54,33 @@ module.exports.start = function (options, callback) {
         return reply.proxy({
           passThrough: true,
           mapUri: mapUri
+        })
+      }
+    })
+
+    server.route({
+      method: 'GET',
+      path: '/authtest/_changes',
+      handler: function proxyHandler (request, reply) {
+        return reply.proxy({
+          passThrough: true,
+          mapUri: mapUriChanges,
+          onResponse: function (error, response, req, reply) {
+            Hoek.assert(!error, error)
+            Wreck.read(response, {json: 'force'}, (error, body) => {
+              Hoek.assert(!error, error)
+              let lastSeq = 0
+              const changes = {
+                results: body.rows.map((row) => {
+                  const seq = row.key[1]
+                  lastSeq = seq
+                  return {seq: seq, id: row.id, changes: [{rev: row.rev}]}
+                })
+              }
+              changes.lastSeq = lastSeq
+              reply(changes)
+            })
+          }
         })
       }
     })
@@ -66,8 +114,8 @@ module.exports.start = function (options, callback) {
             // this is gnarly!
             const name = getUserNameFromRequest(req)
             readBody(response, (body) => {
-              getRolesForUser(name, (roles) => {
-                if (!userOrRoleCanAccess(name, roles, body)) {
+              getUserSession(req, (session) => {
+                if (!userOrRoleCanAccess(name, session.userCtx.roles, body)) {
                   return reply(Boom.unauthorized())
                 }
                 reply(body)
@@ -104,12 +152,18 @@ function userOrRoleCanAccess (name, roles, body) {
   return res
 }
 
-function getRolesForUser (user, callback) {
-  var userDocUri = process.env.COUCHDB + '/_users/org.couchdb.user:' + user
-
-  Wreck.get(userDocUri, { json: 'force' }, (error, response, payload) => {
+function getUserSession (request, callback) {
+  var sessionUri = process.env.COUCHDB + '/_session'
+  const authzHeader = request.headers.authorization
+  const options = {
+    json: 'force',
+    headers: {
+      authorization: authzHeader
+    }
+  }
+  Wreck.get(sessionUri, options, (error, response, payload) => {
     Hoek.assert(!error, error)
-    callback(payload.roles)
+    callback(payload)
   })
 }
 
@@ -121,5 +175,11 @@ function readBody (response, callback) {
   Wreck.read(response, {json: 'force'}, (error, body) => {
     Hoek.assert(!error, error)
     callback(body)
+  })
+}
+
+function getUserSessionByRequest (request, callback) {
+  getUserSession(request, (session) => {
+    callback(session)
   })
 }
