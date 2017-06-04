@@ -4,7 +4,7 @@
   "description": "Tech Demo: Do Not Use",
   "main": "index.js",
   "scripts": {
-    "test": "echo 'All Tests Pass \\o/' && exit 0",
+    "test": "standard && echo 'All Tests Pass \\o/' && exit 0",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "author": "Jan Lehnardt <jan@apache.org>",
