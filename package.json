@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "couchdb-bootstrap": "^1.14.0",
+    "dotenv": "^4.0.0",
     "standard": "^10.0.2"
   },
   "standard": {
