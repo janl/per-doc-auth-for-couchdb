@@ -18,8 +18,12 @@
     "semantic-release": "^6.3.6"
   },
   "dependencies": {
+    "boom": "^5.1.0",
     "couchdb-bootstrap": "^1.14.0",
     "dotenv": "^4.0.0",
+    "h2o2": "^5.4.0",
+    "hapi": "^16.3.0",
+    "hoek": "^4.1.1",
     "standard": "^10.0.2"
   },
   "standard": {
