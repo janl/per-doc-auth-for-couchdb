@@ -15,5 +15,9 @@
   },
   "devDependencies": {
     "semantic-release": "^6.3.6"
+  },
+  "dependencies": {
+    "couchdb-bootstrap": "^1.14.0",
+    "standard": "^10.0.2"
   }
 }
