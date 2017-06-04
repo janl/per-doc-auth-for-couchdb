@@ -22,6 +22,7 @@
     "tap": "^10.3.3"
   },
   "dependencies": {
+    "basic-auth": "^1.1.0",
     "boom": "^5.1.0",
     "couchdb-bootstrap": "^1.14.0",
     "dotenv": "^4.0.0",
