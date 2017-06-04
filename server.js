@@ -72,7 +72,8 @@ module.exports.start = function (options, callback) {
                 results: body.rows.map((row) => {
                   const seq = row.key[1]
                   lastSeq = seq
-                  return {seq: seq, id: row.id, changes: [{rev: row.rev}]}
+                  console.log(row)
+                  return {seq: seq, id: row.id, changes: [{rev: row.value}]}
                 })
               }
               changes.lastSeq = lastSeq

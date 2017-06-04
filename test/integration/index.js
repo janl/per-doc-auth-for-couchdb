@@ -192,7 +192,7 @@ tap.test('get existing doc with other role', (t) => {
   })
 })
 
-tap.only('create docs with two users and query each _changes', (t) => {
+tap.test('create docs with two users and query each _changes', (t) => {
   const docA = {
     _id: 'xa',
     a: 1,
@@ -212,6 +212,8 @@ tap.only('create docs with two users and query each _changes', (t) => {
           t.equals(changesA.results[0].id, 'xa')
           t.equals(changesB.results.length, 1)
           t.equals(changesB.results[0].id, 'xb')
+          console.dir(JSON.stringify(changesA))
+          console.dir(JSON.stringify(changesB))
           deleteDocAs(proxyAuth, t, bodyA, () => {
             deleteDocAs(proxyButh, t, bodyB, t.end)
           })
