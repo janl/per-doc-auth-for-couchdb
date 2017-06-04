@@ -4,14 +4,19 @@ const Hoek = require('hoek')
 const Boom = require('boom')
 
 module.exports.start = function (options, callback) {
-  const server = new Hapi.Server()
+  const server = new Hapi.Server({
+    debug: {
+      log: ['error', 'request'],
+      request: ['error', 'requested', 'request']
+    }
+  })
   server.connection(options.connection)
 
   const mapUri = (request, response) => {
     if (!request.headers.authorization) {
-      response(Boom.unauthorized('Missing authorization header'))
+      return response(Boom.unauthorized('Missing authorization header'))
     }
-    response(null, options.couchdb + request.path)
+    response(null, options.couchdb + request.url.path)
   }
 
   server.register([
