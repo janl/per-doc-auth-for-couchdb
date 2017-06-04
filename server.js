@@ -1,5 +1,3 @@
-const URL = require('url').URL
-
 const Hapi = require('hapi')
 const h2o2 = require('h2o2')
 const Hoek = require('hoek')
