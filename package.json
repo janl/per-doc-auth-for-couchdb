@@ -1,11 +1,19 @@
 {
   "name": "per-doc-auth-for-couchdb",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.0.0-development",
+  "description": "Tech Demo: Do Not Use",
   "main": "index.js",
   "scripts": {
-    "test": "echo 'All Tests Pass \\o/' && exit 0"
+    "test": "echo 'All Tests Pass \\o/' && exit 0",
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "author": "Jan Lehnardt <jan@apache.org>",
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janl/per-doc-auth-for-couchdb.git"
+  },
+  "devDependencies": {
+    "semantic-release": "^6.3.6"
+  }
 }
